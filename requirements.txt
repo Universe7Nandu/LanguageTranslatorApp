@@ -1,0 +1,15 @@
+streamlit==1.32.1
+groq==0.4.0
+pandas==2.1.4
+requests==2.31.0
+pydub==0.25.1
+gTTS==2.3.2
+langdetect==1.0.9
+deep-translator==1.11.4
+pillow==10.2.0
+streamlit-extras==0.3.6
+streamlit-lottie==0.0.5
+streamlit-option-menu==0.3.6
+streamlit-toggle==0.1.1
+altair==5.2.0
+python-dotenv==1.0.0
