@@ -420,7 +420,8 @@ with st.sidebar:
             groq_api_key = st.text_input("GROQ API Key", type="password")
         
         st.markdown('<div class="custom-info-box">', unsafe_allow_html=True)
-        st.markdown("**Note**: For better translation quality and cultural context preservation, 
+        st.markdown("""
+        **Note**: For better translation quality and cultural context preservation, 
         please provide a GROQ API key. Without a key, the app will use the built-in 
         Google Translator which may have limitations with certain Indic languages.
         """)
