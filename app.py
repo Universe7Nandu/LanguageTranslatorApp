@@ -22,6 +22,31 @@ import speech_recognition as sr
 import pdfplumber
 import io
 from contextlib import contextmanager
+from langdetect import detect, LangDetectException
+import streamlit_toggle as tog
+
+# Define a custom colored_header function to replace the one from streamlit-extras
+def colored_header(label, description=None, color_name="blue-70"):
+    """Display a colored header with an optional description."""
+    st.markdown(f"""
+    <div style="background-color:{color_to_hex(color_name)}; padding:10px; border-radius:10px; margin-bottom:10px;">
+        <h3 style="color:white;">{label}</h3>
+        <p style="color:white; opacity:0.8;">{description if description else ''}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Helper function to convert color names to hex
+def color_to_hex(color_name):
+    colors = {
+        "blue-70": "#1565C0",
+        "red-70": "#C62828",
+        "green-70": "#2E7D32",
+        "orange-70": "#EF6C00",
+        "purple-70": "#6A1B9A",
+        "teal-70": "#00796B",
+        "pink-70": "#AD1457",
+    }
+    return colors.get(color_name, "#1565C0")  # Default to blue if color not found
 
 # Load the .env file
 load_dotenv()
