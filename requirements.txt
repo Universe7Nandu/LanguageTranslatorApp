@@ -15,3 +15,4 @@ altair==5.2.0
 python-dotenv==1.0.0
 protobuf>=4.25.1
 importlib-metadata>=6.0.0
+python-docx
