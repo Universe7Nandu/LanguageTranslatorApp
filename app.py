@@ -1,30 +1,32 @@
+import os
+import re
+import sys
+import time
+import base64
+import tempfile
 import streamlit as st
+import streamlit_option_menu
+from streamlit_option_menu import option_menu
+from deep_translator import GoogleTranslator
+from dotenv import load_dotenv
+import groq
+from gtts import gTTS
+from PIL import Image
+from docx import Document
+from PyPDF2 import PdfReader
+from streamlit_lottie import st_lottie
 import pandas as pd
 import requests
-import io
-import base64
-from gtts import gTTS
-import tempfile
-import os
-from PIL import Image
-from deep_translator import GoogleTranslator
-from langdetect import detect, LangDetectException
-import groq
 import json
-import time
-from streamlit_extras.colored_header import colored_header
-from streamlit_extras.add_vertical_space import add_vertical_space
-from streamlit_lottie import st_lottie
-from streamlit_option_menu import option_menu
-import streamlit_toggle as tog
-from streamlit_extras.stateful_button import button
-from streamlit_extras.stylable_container import stylable_container
-from dotenv import load_dotenv
+import speech_recognition as sr
+import pdfplumber
+import io
+from contextlib import contextmanager
 
-# Load environment variables from .env file
+# Load the .env file
 load_dotenv()
 
-# Get API key from environment variables
+# Get API keys from environment variables
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Page configuration
@@ -40,13 +42,27 @@ def local_css():
     st.markdown("""
     <style>
     .main {
-        background-color: #f0f2f6;
+        background-color: #121212;
+        color: #f1f1f1;
     }
     .stApp {
-        background: linear-gradient(135deg, #f0f2f6 0%, #e1e5eb 100%);
+        background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
     }
     .stTextInput, .stSelectbox, .stTextarea {
         border-radius: 10px;
+        background-color: #2d2d2d;
+        color: #ffffff;
+        border: 1px solid #444;
+    }
+    .stTextInput > div[data-baseweb="base-input"] > input {
+        color: #ffffff !important;
+    }
+    .stSelectbox > div[data-baseweb="select"] > div {
+        color: #ffffff !important;
+        background-color: #2d2d2d !important;
+    }
+    .stTextarea > div > div > textarea {
+        color: #ffffff !important;
     }
     .block-container {
         padding-top: 1rem;
@@ -64,20 +80,21 @@ def local_css():
     div.stButton > button:hover {
         background-color: #E64A19;
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     }
     .card {
-        background-color: #ffffff;
+        background-color: #1e1e1e;
         border-radius: 15px;
         padding: 1.5rem;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         margin-bottom: 1rem;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         border-left: 5px solid #FF5722;
+        color: #ffffff;
     }
     .card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.4);
     }
     .language-selector {
         display: flex;
@@ -87,16 +104,17 @@ def local_css():
         margin: 1rem 0;
     }
     .language-btn {
-        background-color: #f0f0f0;
-        border: 1px solid #e0e0e0;
+        background-color: #2d2d2d;
+        border: 1px solid #444;
         border-radius: 30px;
         padding: 5px 15px;
         font-size: 14px;
         cursor: pointer;
         transition: all 0.2s;
+        color: #ffffff;
     }
     .language-btn:hover {
-        background-color: #e0e0e0;
+        background-color: #444444;
     }
     .language-btn.active {
         background-color: #FF5722;
@@ -105,67 +123,74 @@ def local_css():
     }
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
+        background-color: #1e1e1e;
+        border-radius: 10px;
+        padding: 5px;
     }
     .stTabs [data-baseweb="tab"] {
         border-radius: 4px 4px 0px 0px;
         padding: 10px 16px;
-        background-color: #FFFFFF;
+        background-color: #2d2d2d;
+        color: #ffffff;
     }
     .stTabs [aria-selected="true"] {
         background-color: #FF5722;
         color: white;
     }
     h1, h2, h3 {
-        color: #333;
+        color: #ffffff;
+    }
+    p {
+        color: #e0e0e0;
     }
     .footer {
         text-align: center;
         margin-top: 3rem;
-        color: #666;
+        color: #999;
         font-size: 0.8rem;
     }
     .indic-text {
         font-family: 'Noto Sans', sans-serif;
         font-size: 1.2rem;
         line-height: 1.6;
-        color: #333333;
-        background-color: #f9f9f9;
-        padding: 10px;
+        color: #ffffff;
+        background-color: #2d2d2d;
+        padding: 15px;
         border-radius: 8px;
         border-left: 3px solid #FF5722;
     }
     .custom-info-box {
-        background-color: #e8f4f8;
+        background-color: #1a3a4a;
         border-left: 4px solid #4abde8;
         padding: 15px;
         border-radius: 0 8px 8px 0;
         margin: 10px 0;
-        color: #333;
+        color: #e0e0e0;
     }
     .custom-success-box {
-        background-color: #e8f8e9;
+        background-color: #1a4a2e;
         border-left: 4px solid #4ae86b;
         padding: 15px;
         border-radius: 0 8px 8px 0;
         margin: 10px 0;
-        color: #333;
+        color: #e0e0e0;
     }
     .custom-warning-box {
-        background-color: #fff8e8;
+        background-color: #4a3a1a;
         border-left: 4px solid #e8c44a;
         padding: 15px;
         border-radius: 0 8px 8px 0;
         margin: 10px 0;
-        color: #333;
+        color: #e0e0e0;
     }
     .developer-profile {
         display: flex;
         align-items: center;
         padding: 15px;
         border-radius: 10px;
-        background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+        background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
         margin: 20px 0;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         border-left: 4px solid #FF5722;
     }
     .profile-image {
@@ -183,38 +208,40 @@ def local_css():
         margin-top: 10px;
     }
     .social-links a {
-        color: #007BFF;
+        color: #4abde8;
         text-decoration: none;
         margin-right: 15px;
         font-weight: 500;
     }
     .social-links a:hover {
         text-decoration: underline;
+        color: #FF5722;
     }
     .glossy-card {
-        background: rgba(255, 255, 255, 0.9);
+        background: rgba(30, 30, 30, 0.9);
         backdrop-filter: blur(10px);
         border-radius: 15px;
         padding: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(60, 60, 60, 0.5);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         transition: all 0.3s ease;
         margin: 15px 0;
         border-left: 4px solid #FF5722;
+        color: #ffffff;
     }
     .glossy-card:hover {
-        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
         transform: translateY(-5px);
     }
     .nav-link {
-        color: #333;
+        color: #e0e0e0;
         text-decoration: none;
         padding: 10px 15px;
         border-radius: 5px;
         transition: all 0.2s;
     }
     .nav-link:hover {
-        background-color: #f0f0f0;
+        background-color: #2d2d2d;
     }
     .nav-link.active {
         background-color: #FF5722;
@@ -222,18 +249,19 @@ def local_css():
     }
     /* Help section styles */
     .help-section {
-        background-color: #ffebee;
+        background-color: #2a1a1a;
         border-radius: 10px;
         padding: 15px;
         margin: 20px 0;
         border-left: 4px solid #FF5722;
+        color: #e0e0e0;
     }
     .help-step {
-        background-color: white;
+        background-color: #2d2d2d;
         border-radius: 8px;
         padding: 10px 15px;
         margin: 10px 0;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
     .help-step-number {
         background-color: #FF5722;
@@ -246,6 +274,67 @@ def local_css():
         justify-content: center;
         margin-right: 10px;
         font-weight: bold;
+    }
+    /* Make the sidebar darker */
+    section[data-testid="stSidebar"] {
+        background-color: #1a1a1a;
+        border-right: 1px solid #333;
+    }
+    section[data-testid="stSidebar"] .st-bk {
+        background-color: #1a1a1a;
+    }
+    /* Expander customization */
+    .streamlit-expanderHeader {
+        background-color: #2d2d2d !important;
+        color: #ffffff !important;
+        border-radius: 8px !important;
+    }
+    .streamlit-expanderContent {
+        background-color: #1e1e1e !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #444 !important;
+        border-top: none !important;
+        border-radius: 0 0 8px 8px !important;
+    }
+    /* Dataframe styling */
+    .stDataFrame {
+        background-color: #1e1e1e !important;
+    }
+    .dataframe {
+        background-color: #2d2d2d !important;
+        color: #e0e0e0 !important;
+    }
+    .dataframe th {
+        background-color: #444 !important;
+        color: #ffffff !important;
+    }
+    .dataframe td {
+        background-color: #2d2d2d !important;
+        color: #e0e0e0 !important;
+    }
+    /* Fix selectbox text color */
+    div[data-baseweb="select"] > div {
+        color: #ffffff !important;
+    }
+    /* Fix other input elements */
+    input, textarea {
+        color: #ffffff !important;
+    }
+    /* Status message styling */
+    .stAlert {
+        background-color: #2d2d2d !important;
+        color: #e0e0e0 !important;
+    }
+    .st-ae {
+        color: #e0e0e0 !important;
+    }
+    /* Code display */
+    code {
+        background-color: #2d2d2d !important;
+        color: #e0e0e0 !important;
+    }
+    pre {
+        background-color: #2d2d2d !important;
     }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
@@ -339,6 +428,7 @@ def translate_with_groq(text, source_lang, target_lang, api_key):
         return text
     
     try:
+        # Fix GROQ client initialization to only use api_key parameter
         client = groq.Client(api_key=api_key)
         source_lang_name = INDIC_LANGUAGES.get(source_lang, "Unknown")
         target_lang_name = INDIC_LANGUAGES.get(target_lang, "Unknown")
@@ -544,11 +634,10 @@ with st.sidebar:
             groq_api_key = st.text_input("GROQ API Key", type="password")
         
         st.markdown('<div class="custom-info-box">', unsafe_allow_html=True)
-        st.markdown("""
-        **Note**: For better translation quality and cultural context preservation, 
+        st.markdown("**Note**: For better translation quality and cultural context preservation, 
         please provide a GROQ API key. Without a key, the app will use the built-in 
         Google Translator which may have limitations with certain Indic languages.
-        """)
+        """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
         # Advanced Settings
