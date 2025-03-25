@@ -25,7 +25,8 @@ from contextlib import contextmanager
 from langdetect import detect, LangDetectException
 import streamlit_toggle as tog
 
-# Define a custom colored_header function to replace the one from streamlit-extras
+# Define custom functions to replace streamlit-extras functions
+
 def colored_header(label, description=None, color_name="blue-70"):
     """Display a colored header with an optional description."""
     st.markdown(f"""
@@ -47,6 +48,61 @@ def color_to_hex(color_name):
         "pink-70": "#AD1457",
     }
     return colors.get(color_name, "#1565C0")  # Default to blue if color not found
+
+# Custom function to replace stateful_button from streamlit-extras
+def button(label, key=None, help=None, on_click=None, args=None, kwargs=None, type="primary", disabled=False, use_container_width=True):
+    """Custom button implementation to replace streamlit-extras.stateful_button"""
+    return st.button(
+        label=label, 
+        key=key, 
+        help=help,
+        on_click=on_click,
+        args=args,
+        kwargs=kwargs,
+        type=type,
+        disabled=disabled,
+        use_container_width=use_container_width
+    )
+
+# Custom function to replace add_vertical_space from streamlit-extras
+def add_vertical_space(height=1):
+    """Add vertical space to the app"""
+    st.markdown(f"<div style='margin-top: {height}rem;'></div>", unsafe_allow_html=True)
+
+# Custom stylable container to replace streamlit-extras
+def stylable_container(key, css_styles=None):
+    """Custom implementation of stylable container without using contextmanager"""
+    unique_key = f"stylable_container_{key}"
+    # Generate a unique class name based on the key
+    class_name = f"stContainer-{key}".replace("_", "-").lower()
+    
+    # Apply the CSS with the unique class
+    if css_styles:
+        css = f"""
+        <style>
+        .{class_name} {css_styles}
+        </style>
+        """
+        st.markdown(css, unsafe_allow_html=True)
+    
+    # Create a container with that class
+    container_html = f'<div class="{class_name}" id="{unique_key}">'
+    st.markdown(container_html, unsafe_allow_html=True)
+    
+    # Create a container for the content
+    container = st.container()
+    
+    # Return the container
+    return container
+
+# Helper function for consistent markdown formatting
+def md(text, unsafe_allow_html=False):
+    """Format multiline markdown text consistently by stripping leading/trailing whitespace."""
+    if text:
+        # Remove common leading whitespace from all lines
+        import textwrap
+        text = textwrap.dedent(text).strip()
+    return st.markdown(text, unsafe_allow_html=unsafe_allow_html)
 
 # Load the .env file
 load_dotenv()
@@ -454,6 +510,7 @@ def translate_with_groq(text, source_lang, target_lang, api_key):
     
     try:
         # Fix GROQ client initialization to only use api_key parameter
+        # Explicitly only pass api_key to avoid proxies issue
         client = groq.Client(api_key=api_key)
         source_lang_name = INDIC_LANGUAGES.get(source_lang, "Unknown")
         target_lang_name = INDIC_LANGUAGES.get(target_lang, "Unknown")
@@ -659,7 +716,7 @@ with st.sidebar:
             groq_api_key = st.text_input("GROQ API Key", type="password")
         
         st.markdown('<div class="custom-info-box">', unsafe_allow_html=True)
-        st.markdown("""
+        md("""
         **Note**: For better translation quality and cultural context preservation, 
         please provide a GROQ API key. Without a key, the app will use the built-in 
         Google Translator which may have limitations with certain Indic languages.
@@ -1397,7 +1454,8 @@ if menu == "Translate":
             phrases_to_show = common_phrases.get(current_lang_code, common_phrases["hi"])
             
             for phrase in phrases_to_show:
-                with stylable_container(
+                # Use the stylable_container without context manager
+                container = stylable_container(
                     key=f"phrase_{phrase}",
                     css_styles="""
                     {
@@ -1413,15 +1471,17 @@ if menu == "Translate":
                         border-color: #FF5722;
                     }
                     """
-                ):
-                    st.markdown(f"<div class='indic-text'>{phrase}</div>", unsafe_allow_html=True)
-                    if st.button("🔊", key=f"play_{phrase}"):
-                        clean_phrase = phrase.split(" (")[0]  # Extract just the native text
-                        audio_path = text_to_speech(clean_phrase, current_lang_code)
-                        if audio_path:
-                            st.markdown(get_audio_player(audio_path), unsafe_allow_html=True)
-                            # Clean up the temporary file
-                            os.remove(audio_path)
+                )
+                container.markdown(f"<div class='indic-text'>{phrase}</div>", unsafe_allow_html=True)
+                if container.button("🔊", key=f"play_{phrase}"):
+                    clean_phrase = phrase.split(" (")[0]  # Extract just the native text
+                    audio_path = text_to_speech(clean_phrase, current_lang_code)
+                    if audio_path:
+                        container.markdown(get_audio_player(audio_path), unsafe_allow_html=True)
+                        # Clean up the temporary file
+                        os.remove(audio_path)
+                # Close the container div
+                st.markdown("</div>", unsafe_allow_html=True)
             
             # Pronunciation tips
             st.markdown("### Pronunciation Tips")
