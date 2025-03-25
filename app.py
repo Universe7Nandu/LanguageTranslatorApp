@@ -40,10 +40,10 @@ def local_css():
     st.markdown("""
     <style>
     .main {
-        background-color: #f5f5f5;
+        background-color: #f0f2f6;
     }
     .stApp {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ed 100%);
+        background: linear-gradient(135deg, #f0f2f6 0%, #e1e5eb 100%);
     }
     .stTextInput, .stSelectbox, .stTextarea {
         border-radius: 10px;
@@ -67,16 +67,17 @@ def local_css():
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .card {
-        background-color: white;
+        background-color: #ffffff;
         border-radius: 15px;
         padding: 1.5rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         margin-bottom: 1rem;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-left: 5px solid #FF5722;
     }
     .card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.15);
     }
     .language-selector {
         display: flex;
@@ -127,6 +128,11 @@ def local_css():
         font-family: 'Noto Sans', sans-serif;
         font-size: 1.2rem;
         line-height: 1.6;
+        color: #333333;
+        background-color: #f9f9f9;
+        padding: 10px;
+        border-radius: 8px;
+        border-left: 3px solid #FF5722;
     }
     .custom-info-box {
         background-color: #e8f4f8;
@@ -134,6 +140,7 @@ def local_css():
         padding: 15px;
         border-radius: 0 8px 8px 0;
         margin: 10px 0;
+        color: #333;
     }
     .custom-success-box {
         background-color: #e8f8e9;
@@ -141,6 +148,7 @@ def local_css():
         padding: 15px;
         border-radius: 0 8px 8px 0;
         margin: 10px 0;
+        color: #333;
     }
     .custom-warning-box {
         background-color: #fff8e8;
@@ -148,6 +156,7 @@ def local_css():
         padding: 15px;
         border-radius: 0 8px 8px 0;
         margin: 10px 0;
+        color: #333;
     }
     .developer-profile {
         display: flex;
@@ -157,6 +166,7 @@ def local_css():
         background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
         margin: 20px 0;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border-left: 4px solid #FF5722;
     }
     .profile-image {
         width: 80px;
@@ -182,16 +192,18 @@ def local_css():
         text-decoration: underline;
     }
     .glossy-card {
-        background: rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(10px);
         border-radius: 15px;
         padding: 20px;
         border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         transition: all 0.3s ease;
+        margin: 15px 0;
+        border-left: 4px solid #FF5722;
     }
     .glossy-card:hover {
-        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
         transform: translateY(-5px);
     }
     .nav-link {
@@ -207,6 +219,33 @@ def local_css():
     .nav-link.active {
         background-color: #FF5722;
         color: white;
+    }
+    /* Help section styles */
+    .help-section {
+        background-color: #ffebee;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 20px 0;
+        border-left: 4px solid #FF5722;
+    }
+    .help-step {
+        background-color: white;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin: 10px 0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .help-step-number {
+        background-color: #FF5722;
+        color: white;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        font-weight: bold;
     }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
@@ -420,8 +459,7 @@ with st.sidebar:
             groq_api_key = st.text_input("GROQ API Key", type="password")
         
         st.markdown('<div class="custom-info-box">', unsafe_allow_html=True)
-        st.markdown("""
-        **Note**: For better translation quality and cultural context preservation, 
+        st.markdown("**Note**: For better translation quality and cultural context preservation, 
         please provide a GROQ API key. Without a key, the app will use the built-in 
         Google Translator which may have limitations with certain Indic languages.
         """)
@@ -467,6 +505,68 @@ if menu == "Translate":
         description="Translate between Indic languages while preserving cultural context",
         color_name="red-70"
     )
+    
+    # Welcome message for first-time users
+    if 'first_visit' not in st.session_state:
+        st.session_state.first_visit = True
+        st.session_state.show_help = True
+        
+        st.markdown('<div class="glossy-card">', unsafe_allow_html=True)
+        st.markdown("## 🎉 Welcome to भाषा सेतु (Bhasha Setu)!")
+        st.markdown("""
+        Thank you for using our Indic language translation platform. Here's what you can do:
+        
+        - 🌐 Translate text between 15 Indic languages
+        - 🗣️ Listen to pronunciations with text-to-speech
+        - 📄 Translate documents and spreadsheets
+        - 🎤 Use voice input for hands-free translation
+        - 🔤 Learn proper pronunciation of Indic languages
+        
+        Click the **❓ How to use** button above for a quick tutorial!
+        """)
+        
+        if st.button("Get Started", use_container_width=True):
+            st.session_state.first_visit = False
+            st.rerun()
+            
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Help button in the top right
+    if st.button("❓ How to use"):
+        st.session_state.show_help = not st.session_state.get('show_help', False)
+    
+    # Display help section if requested
+    if st.session_state.get('show_help', False):
+        st.markdown('<div class="help-section">', unsafe_allow_html=True)
+        st.subheader("📚 How to use Bhasha Setu")
+        
+        st.markdown('<div class="help-step">', unsafe_allow_html=True)
+        st.markdown('<span class="help-step-number">1</span> <b>Select source language</b> - Choose the language you want to translate from', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="help-step">', unsafe_allow_html=True)
+        st.markdown('<span class="help-step-number">2</span> <b>Type or paste text</b> - Enter the text you want to translate', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="help-step">', unsafe_allow_html=True)
+        st.markdown('<span class="help-step-number">3</span> <b>Select target language</b> - Choose the language you want to translate to', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="help-step">', unsafe_allow_html=True)
+        st.markdown('<span class="help-step-number">4</span> <b>Translation appears automatically</b> - The translated text will appear in the right panel', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="help-step">', unsafe_allow_html=True)
+        st.markdown('<span class="help-step-number">5</span> <b>Additional features</b> - Try voice input, document translation, or pronunciation help', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown("**Tip**: You can also detect language automatically using the 'Detect Language' button!")
+        
+        if st.button("Got it! 👍"):
+            st.session_state.show_help = False
+            st.rerun()
+            
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # Create tabs for different translation features
     tabs = st.tabs(["Text Translation", "Document Translation", "Bulk Translation", "Pronunciation Helper", "Analytics"])
