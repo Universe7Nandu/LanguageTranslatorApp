@@ -288,6 +288,9 @@ def get_lang_code(lang_name):
 
 # Function to detect language
 def detect_language(text):
+    if not text or len(text.strip()) == 0:
+        return "en"  # Default to English for empty input
+    
     try:
         lang = detect(text)
         if lang in INDIC_LANGUAGES:
@@ -298,20 +301,34 @@ def detect_language(text):
 
 # Function to translate text using deep_translator
 def translate_text(text, target_lang):
-    if not text:
+    if not text or len(text.strip()) == 0:
         return ""
     
-    source_lang = detect_language(text)
-    if source_lang == target_lang:
-        return text
-    
     try:
+        source_lang = detect_language(text)
+        if source_lang == target_lang:
+            return text
+        
+        # Set a timeout for translation to prevent hanging
         translator = GoogleTranslator(source=source_lang, target=target_lang)
         translated = translator.translate(text)
-        return translated
+        
+        if not translated or len(translated.strip()) == 0:
+            st.warning("Translation returned empty result. Trying with 'auto' source language.")
+            translator = GoogleTranslator(source='auto', target=target_lang)
+            translated = translator.translate(text)
+            
+        return translated if translated else text
     except Exception as e:
         st.error(f"Translation error: {str(e)}")
-        return text
+        try:
+            # Fallback to auto detection
+            st.info("Trying fallback translation with auto-detection...")
+            translator = GoogleTranslator(source='auto', target=target_lang)
+            return translator.translate(text)
+        except Exception as fallback_error:
+            st.error(f"Fallback translation error: {str(fallback_error)}")
+            return text  # Return original text if all translation attempts fail
 
 # Function to translate using GROQ API for more context-aware translations
 def translate_with_groq(text, source_lang, target_lang, api_key):
@@ -332,14 +349,27 @@ def translate_with_groq(text, source_lang, target_lang, api_key):
         
         Text to translate: {text}"""
         
-        response = client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": "You are a professional translator specializing in Indic languages."},
-                {"role": "user", "content": prompt}
-            ],
-            model="llama3-70b-8192",
-            max_tokens=2048
-        )
+        # Try with llama3-70b-8192 model first, fall back to llama3-8b-8192 if not available
+        try:
+            response = client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": "You are a professional translator specializing in Indic languages."},
+                    {"role": "user", "content": prompt}
+                ],
+                model="llama3-70b-8192",
+                max_tokens=2048
+            )
+        except Exception as model_error:
+            st.warning(f"Falling back to alternative model due to: {str(model_error)}")
+            # Fall back to a different model
+            response = client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": "You are a professional translator specializing in Indic languages."},
+                    {"role": "user", "content": prompt}
+                ],
+                model="mixtral-8x7b-32768",
+                max_tokens=2048
+            )
         
         return response.choices[0].message.content.strip()
     except Exception as e:
@@ -349,27 +379,82 @@ def translate_with_groq(text, source_lang, target_lang, api_key):
 
 # Function to convert text to speech
 def text_to_speech(text, lang_code):
+    if not text:
+        return None
+        
     try:
-        tts = gTTS(text=text, lang=lang_code, slow=False)
+        # Map language codes to compatible gTTS language codes if needed
+        gtts_lang_mapping = {
+            "hi": "hi",
+            "bn": "bn",
+            "ta": "ta",
+            "te": "te",
+            "mr": "mr",
+            "gu": "gu",
+            "kn": "kn",
+            "ml": "ml",
+            "pa": "pa",
+            "or": "en",  # Fallback to English if Odia not supported
+            "as": "en",  # Fallback to English if Assamese not supported
+            "ur": "ur",
+            "si": "si",
+            "ne": "ne",
+            "en": "en"
+        }
+        
+        # Get compatible language code or fallback to English
+        compatible_lang = gtts_lang_mapping.get(lang_code, "en")
+        
+        tts = gTTS(text=text, lang=compatible_lang, slow=False)
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as fp:
             tts.save(fp.name)
             return fp.name
     except Exception as e:
         st.error(f"Text to speech error: {str(e)}")
-        return None
+        st.info("Falling back to English text-to-speech")
+        # Fallback to English
+        try:
+            tts = gTTS(text=text, lang="en", slow=False)
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as fp:
+                tts.save(fp.name)
+                return fp.name
+        except Exception as fallback_error:
+            st.error(f"Fallback text-to-speech error: {str(fallback_error)}")
+            return None
 
 # Function to get audio player HTML
 def get_audio_player(audio_path):
-    audio_file = open(audio_path, 'rb')
-    audio_bytes = audio_file.read()
-    audio_base64 = base64.b64encode(audio_bytes).decode()
-    audio_html = f"""
-        <audio controls autoplay>
-            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-            Your browser does not support the audio element.
-        </audio>
-    """
-    return audio_html
+    try:
+        # Check if the audio file exists
+        if not os.path.exists(audio_path):
+            st.error(f"Audio file not found at: {audio_path}")
+            return None
+            
+        # Check file size
+        if os.path.getsize(audio_path) == 0:
+            st.error("Audio file is empty")
+            return None
+        
+        audio_file = open(audio_path, 'rb')
+        audio_bytes = audio_file.read()
+        audio_file.close()
+        
+        # Check if we actually got any content
+        if not audio_bytes:
+            st.error("Could not read audio file")
+            return None
+            
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+        audio_html = f"""
+            <audio controls autoplay>
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+                Your browser does not support the audio element.
+            </audio>
+        """
+        return audio_html
+    except Exception as e:
+        st.error(f"Error preparing audio player: {str(e)}")
+        return None
 
 # Developer Information Section
 def show_developer_info():
@@ -459,7 +544,8 @@ with st.sidebar:
             groq_api_key = st.text_input("GROQ API Key", type="password")
         
         st.markdown('<div class="custom-info-box">', unsafe_allow_html=True)
-        st.markdown("**Note**: For better translation quality and cultural context preservation, 
+        st.markdown("""
+        **Note**: For better translation quality and cultural context preservation, 
         please provide a GROQ API key. Without a key, the app will use the built-in 
         Google Translator which may have limitations with certain Indic languages.
         """)
@@ -521,9 +607,22 @@ if menu == "Translate":
         - 📄 Translate documents and spreadsheets
         - 🎤 Use voice input for hands-free translation
         - 🔤 Learn proper pronunciation of Indic languages
-        
-        Click the **❓ How to use** button above for a quick tutorial!
         """)
+        
+        # Display API key info
+        if GROQ_API_KEY:
+            st.success("✅ GROQ API key detected! You'll get high-quality translations.")
+        else:
+            st.warning("""
+            ⚠️ No GROQ API key found. For better translation quality, please:
+            1. Go to the 'API Settings' in the sidebar
+            2. Enter your GROQ API key
+            3. Or add it to a `.env` file with GROQ_API_KEY="your_key"
+            
+            You can still use the app without a key, but translations will use Google Translate instead.
+            """)
+        
+        st.markdown("Click the **❓ How to use** button above for a quick tutorial!")
         
         if st.button("Get Started", use_container_width=True):
             st.session_state.first_visit = False
@@ -645,34 +744,48 @@ if menu == "Translate":
                 
             if source_text:
                 with st.spinner("Translating..."):
-                    # Try using GROQ API key in the following order:
-                    # 1. Local variable from settings
-                    # 2. Global variable from .env file
-                    # 3. Fallback to Google Translate
-                    api_key_to_use = None
-                    
-                    if 'groq_api_key' in locals() and groq_api_key:
-                        api_key_to_use = groq_api_key
-                    elif GROQ_API_KEY:
-                        api_key_to_use = GROQ_API_KEY
-                    
-                    if api_key_to_use:
-                        translated_text = translate_with_groq(
-                            source_text, 
-                            source_lang_code, 
-                            target_lang_code,
-                            api_key_to_use
-                        )
-                        translation_method = "GROQ API"
-                    else:
-                        translated_text = translate_text(source_text, target_lang_code)
-                        translation_method = "Google Translate"
-                    
-                    st.session_state.translated_text = translated_text
-                    st.markdown(f"<p>{translated_text}</p>", unsafe_allow_html=True)
-                    
-                    # Show which translation method was used
-                    st.caption(f"Translated using: {translation_method}")
+                    try:
+                        # Try using GROQ API key in the following order:
+                        # 1. Local variable from settings
+                        # 2. Global variable from .env file
+                        # 3. Fallback to Google Translate
+                        api_key_to_use = None
+                        
+                        if 'groq_api_key' in locals() and groq_api_key:
+                            api_key_to_use = groq_api_key
+                            st.info("Using GROQ API key from settings...")
+                        elif GROQ_API_KEY:
+                            api_key_to_use = GROQ_API_KEY
+                            st.info("Using GROQ API key from environment variables...")
+                        
+                        if api_key_to_use:
+                            st.info(f"Translating from {source_lang} to {target_lang} using GROQ AI...")
+                            translated_text = translate_with_groq(
+                                source_text, 
+                                source_lang_code, 
+                                target_lang_code,
+                                api_key_to_use
+                            )
+                            translation_method = "GROQ API"
+                        else:
+                            st.info(f"No GROQ API key found, using Google Translate...")
+                            translated_text = translate_text(source_text, target_lang_code)
+                            translation_method = "Google Translate"
+                        
+                        # Ensure we have a valid translation
+                        if not translated_text or len(translated_text.strip()) == 0:
+                            st.warning("Translation returned empty. Using original text.")
+                            translated_text = source_text
+                            
+                        st.session_state.translated_text = translated_text
+                        st.markdown(f"<p>{translated_text}</p>", unsafe_allow_html=True)
+                        
+                        # Show which translation method was used
+                        st.caption(f"Translated using: {translation_method}")
+                    except Exception as e:
+                        st.error(f"Translation failed: {str(e)}")
+                        st.session_state.translated_text = f"Translation error: {str(e)}"
+                        st.markdown(f"<p>{st.session_state.translated_text}</p>", unsafe_allow_html=True)
             else:
                 if st.session_state.translated_text:
                     st.markdown(f"<p>{st.session_state.translated_text}</p>", unsafe_allow_html=True)
@@ -692,12 +805,35 @@ if menu == "Translate":
                     
                     if speak_target_btn:
                         with st.spinner("Generating audio..."):
-                            audio_path = text_to_speech(st.session_state.translated_text, target_lang_code)
-                            
-                            if audio_path:
-                                st.markdown(get_audio_player(audio_path), unsafe_allow_html=True)
-                                # Clean up the temporary file
-                                os.remove(audio_path)
+                            try:
+                                if not st.session_state.translated_text or len(st.session_state.translated_text.strip()) == 0:
+                                    st.warning("No text to play. Please translate some text first.")
+                                else:
+                                    text_to_speak = st.session_state.translated_text
+                                    # Limit text length for TTS to prevent errors
+                                    if len(text_to_speak) > 500:
+                                        st.info("Text is too long for audio. Playing the first 500 characters.")
+                                        text_to_speak = text_to_speak[:500]
+                                        
+                                    audio_path = text_to_speech(text_to_speak, target_lang_code)
+                                    
+                                    if audio_path:
+                                        audio_player_html = get_audio_player(audio_path)
+                                        if audio_player_html:
+                                            st.markdown(audio_player_html, unsafe_allow_html=True)
+                                            # Clean up the temporary file after a delay to ensure it can be played
+                                            time.sleep(1)
+                                            try:
+                                                os.remove(audio_path)
+                                            except Exception as cleanup_error:
+                                                st.warning(f"Could not clean up audio file: {str(cleanup_error)}")
+                                        else:
+                                            st.error("Failed to create audio player. Please try again.")
+                                    else:
+                                        st.error("Could not generate audio. Please try another language.")
+                            except Exception as e:
+                                st.error(f"Audio playback error: {str(e)}")
+                                st.info("Try using a different language or shorter text.")
             with col2_3:
                 share_btn = st.button("🔗 Share", use_container_width=True)
                 if share_btn and st.session_state.translated_text:
@@ -716,11 +852,35 @@ if menu == "Translate":
         # Listen to source text
         if speak_source_btn and source_text:
             with st.spinner("Generating audio..."):
-                audio_path = text_to_speech(source_text, source_lang_code)
-                if audio_path:
-                    st.markdown(get_audio_player(audio_path), unsafe_allow_html=True)
-                    # Clean up the temporary file
-                    os.remove(audio_path)
+                try:
+                    if not source_text or len(source_text.strip()) == 0:
+                        st.warning("No text to play. Please enter some text first.")
+                    else:
+                        text_to_speak = source_text
+                        # Limit text length for TTS to prevent errors
+                        if len(text_to_speak) > 500:
+                            st.info("Text is too long for audio. Playing the first 500 characters.")
+                            text_to_speak = text_to_speak[:500]
+                            
+                        audio_path = text_to_speech(text_to_speak, source_lang_code)
+                        
+                        if audio_path:
+                            audio_player_html = get_audio_player(audio_path)
+                            if audio_player_html:
+                                st.markdown(audio_player_html, unsafe_allow_html=True)
+                                # Clean up the temporary file after a delay to ensure it can be played
+                                time.sleep(1)
+                                try:
+                                    os.remove(audio_path)
+                                except Exception as cleanup_error:
+                                    st.warning(f"Could not clean up audio file: {str(cleanup_error)}")
+                            else:
+                                st.error("Failed to create audio player. Please try again.")
+                        else:
+                            st.error("Could not generate audio. Please try another language.")
+                except Exception as e:
+                    st.error(f"Audio playback error: {str(e)}")
+                    st.info("Try using a different language or shorter text.")
         
         # New Feature: Voice Input
         st.markdown('<div class="glossy-card">', unsafe_allow_html=True)
