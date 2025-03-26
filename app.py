@@ -100,11 +100,11 @@ def apply_custom_css():
         font-size: 0.85rem;
     }
     
-    # div.stButton > button:hover {
-    #     background-color: #0891b2;
-    #     transform: translateY(-2px);
-    #     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    # }
+    div.stButton > button:hover {
+        background-color: #0891b2;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
     
     /* Lang button grid */
     .lang-button-grid {
