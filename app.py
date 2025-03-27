@@ -25,136 +25,169 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for professional dark theme
+# Custom CSS for modern 3D theme
 st.markdown("""
 <style>
-    /* Main theme colors */
+    /* Modern theme colors */
     :root {
-        --bg-color: #0f172a;
-        --card-bg: #1e293b;
-        --accent: #3b82f6;
-        --accent-hover: #2563eb;
+        --bg-color: #0a0f1c;
+        --card-bg: #1a1f2e;
+        --accent: #4f46e5;
+        --accent-hover: #4338ca;
         --text: #f8fafc;
         --text-secondary: #94a3b8;
-        --border: #334155;
+        --border: #2d3748;
+        --gradient-1: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        --gradient-2: linear-gradient(135deg, #1a1f2e 0%, #2d3748 100%);
     }
 
-    /* Main container */
+    /* Main container with 3D effect */
     .main {
         background-color: var(--bg-color);
         color: var(--text);
         font-family: 'Inter', sans-serif;
+        perspective: 1000px;
     }
 
     .stApp {
         background: var(--bg-color);
     }
 
-    /* Headers */
-    h1, h2, h3 {
+    /* Modern headers with 3D text effect */
+    h1 {
         color: var(--text);
-        font-weight: 600;
+        font-weight: 800;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        transform-style: preserve-3d;
+        transition: transform 0.3s ease;
     }
 
-    /* Translation panels */
+    h1:hover {
+        transform: translateZ(20px) rotateX(5deg);
+    }
+
+    /* Glassmorphism panels */
     .translator-panel {
-        background-color: var(--card-bg);
-        border-radius: 12px;
+        background: rgba(26, 31, 46, 0.8);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
         padding: 24px;
         margin: 16px 0;
-        border: 1px solid var(--border);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        transform-style: preserve-3d;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    /* Buttons */
+    .translator-panel:hover {
+        transform: translateY(-5px) translateZ(10px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+
+    /* Modern buttons with 3D effect */
     .stButton > button {
-        background-color: var(--accent) !important;
+        background: var(--gradient-1) !important;
         color: white !important;
         border: none !important;
-        border-radius: 8px !important;
+        border-radius: 12px !important;
         padding: 0.75rem 1.5rem !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
         transition: all 0.3s ease !important;
+        transform-style: preserve-3d !important;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2) !important;
     }
 
     .stButton > button:hover {
-        background-color: var(--accent-hover) !important;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        transform: translateY(-2px) translateZ(5px) !important;
+        box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3) !important;
     }
 
-    /* Text areas and inputs */
+    /* Modern text areas */
     .stTextArea > div > div > textarea,
     .stSelectbox > div > div {
-        background-color: #1e293b !important;
+        background: rgba(26, 31, 46, 0.8) !important;
         color: var(--text) !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 8px !important;
-        padding: 12px !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        border-radius: 12px !important;
+        padding: 16px !important;
+        backdrop-filter: blur(10px) !important;
+        transition: all 0.3s ease !important;
     }
 
-    /* Status messages */
+    .stTextArea > div > div > textarea:focus,
+    .stSelectbox > div > div:focus {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2) !important;
+    }
+
+    /* Modern status messages */
     .status-box {
-        padding: 12px 16px;
-        border-radius: 8px;
-        margin: 12px 0;
-        font-size: 0.9rem;
+        padding: 16px;
+        border-radius: 12px;
+        margin: 16px 0;
+        font-size: 0.95rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
     }
 
     .status-success {
-        background-color: rgba(34, 197, 94, 0.1);
+        background: rgba(34, 197, 94, 0.1);
         border-left: 4px solid #22c55e;
         color: #86efac;
     }
 
     .status-error {
-        background-color: rgba(239, 68, 68, 0.1);
+        background: rgba(239, 68, 68, 0.1);
         border-left: 4px solid #ef4444;
         color: #fecaca;
     }
 
-    /* Audio player */
+    /* Modern audio player */
     audio {
         width: 100%;
-        margin-top: 12px;
-        border-radius: 8px;
-        background-color: var(--card-bg);
+        margin-top: 16px;
+        border-radius: 12px;
+        background: var(--gradient-2);
+        border: 1px solid rgba(255,255,255,0.1);
     }
 
-    /* Language selector */
+    /* Modern language selector */
     .language-selector {
         display: flex;
         gap: 12px;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
     }
 
-    /* Quick language buttons */
+    /* Modern quick language buttons */
     .quick-lang-btn {
-        background-color: var(--card-bg);
+        background: var(--gradient-2);
         color: var(--text);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 8px 16px;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 10px 20px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
     }
 
     .quick-lang-btn:hover {
-        background-color: var(--accent);
-        border-color: var(--accent);
+        background: var(--gradient-1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
     }
 
     .quick-lang-btn.active {
-        background-color: var(--accent);
+        background: var(--gradient-1);
         border-color: var(--accent);
     }
 
-    /* Loading animation */
+    /* Modern loading animation */
     .loading {
         display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 3px solid rgba(255,255,255,.3);
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(79, 70, 229, 0.3);
         border-radius: 50%;
         border-top-color: var(--accent);
         animation: spin 1s ease-in-out infinite;
@@ -162,6 +195,54 @@ st.markdown("""
 
     @keyframes spin {
         to { transform: rotate(360deg); }
+    }
+
+    /* Developer info card */
+    .dev-info {
+        background: var(--gradient-2);
+        border-radius: 16px;
+        padding: 24px;
+        margin: 20px 0;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        backdrop-filter: blur(10px);
+    }
+
+    .dev-info h3 {
+        color: var(--accent);
+        margin-bottom: 12px;
+    }
+
+    .dev-info a {
+        color: var(--accent);
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .dev-info a:hover {
+        color: var(--accent-hover);
+    }
+
+    /* Modern footer */
+    .footer {
+        text-align: center;
+        padding: 24px;
+        margin-top: 40px;
+        background: var(--gradient-2);
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    /* Floating animation for elements */
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+
+    .floating {
+        animation: float 3s ease-in-out infinite;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -302,7 +383,7 @@ def get_audio_player(audio_path):
         return None
 
 def main():
-    # App header with professional styling
+    # App header with 3D effect
     st.title("🌐 Indic Language Translator Pro")
     st.markdown("""
         <div style='color: var(--text-secondary); font-size: 1.1rem;'>
@@ -310,11 +391,21 @@ def main():
         </div>
     """, unsafe_allow_html=True)
 
+    # Developer info card
+    st.markdown("""
+        <div class="dev-info">
+            <h3>👨‍💻 Developer</h3>
+            <p>Created by <strong>Nandesh Kalashetti</strong></p>
+            <p>Geni AI / Front-end Developer</p>
+            <p>Portfolio: <a href="https://nandesh-kalashettiportfilio2386.netlify.app/" target="_blank">View Portfolio</a></p>
+        </div>
+    """, unsafe_allow_html=True)
+
     # Main translation interface
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown('<div class="translator-panel">', unsafe_allow_html=True)
+        st.markdown('<div class="translator-panel floating">', unsafe_allow_html=True)
         
         # Source language selection
         source_lang = st.selectbox(
@@ -370,7 +461,7 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
-        st.markdown('<div class="translator-panel">', unsafe_allow_html=True)
+        st.markdown('<div class="translator-panel floating">', unsafe_allow_html=True)
         
         # Target language selection
         target_lang = st.selectbox(
@@ -432,12 +523,13 @@ def main():
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Footer with professional styling
-    st.markdown("---")
+    # Modern footer with developer info
     st.markdown("""
-        <div style='text-align: center; color: var(--text-secondary);'>
-            <p>Made with ❤️ | Indic Language Translator Pro</p>
-            <p style='font-size: 0.8rem;'>Professional translation platform for Indic languages</p>
+        <div class="footer">
+            <p>Made with ❤️ by Nandesh Kalashetti</p>
+            <p style='font-size: 0.9rem;'>Geni AI / Front-end Developer</p>
+            <p style='font-size: 0.8rem;'>Portfolio: <a href="https://nandesh-kalashettiportfilio2386.netlify.app/" target="_blank">View Portfolio</a></p>
+            <p style='font-size: 0.8rem; color: var(--text-secondary);'>© 2024 Indic Language Translator Pro</p>
         </div>
     """, unsafe_allow_html=True)
 
