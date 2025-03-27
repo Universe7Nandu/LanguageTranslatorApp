@@ -411,6 +411,7 @@ def main():
         source_lang = st.selectbox(
             "From Language",
             options=[lang["name"] for lang in LANGUAGES.values()],
+            placholder="Select Language",
             index=0,
             key="source_lang"
         )
