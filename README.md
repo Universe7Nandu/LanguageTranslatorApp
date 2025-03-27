@@ -89,7 +89,6 @@ streamlit run app.py
 
 ## 👨‍💻 Developer
 
-<img src="https://avatars.githubusercontent.com/u/Universe7Nandu" width="150" height="150" style="border-radius: 50%; border: 4px solid #FF1493; box-shadow: 0 0 20px rgba(255,20,147,0.5);" />
 
 ### Nandesh Kalashetti
 **Geni AI / Front-end Developer**
